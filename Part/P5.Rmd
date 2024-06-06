@@ -1,0 +1,59 @@
+---
+title: "Decision Tree"
+author: "tntrg_03"
+date: "2024-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Mô hình cây quyết định dùng cho cả regression và classification
+
+```{r}
+library(tree)
+library(ISLR)
+library(gbm)
+library(caret)
+library(tidyverse)
+library(MASS)
+library(randomForest)
+library(dplyr)
+tree1=tree(medv~lstat,data= Boston)
+tree1=prune.tree(tree1,best = 4)
+plot(tree1)
+text(tree1,pretty=0)
+```
+Xây dựng mô hình cây quyết định 1 nút 2 lá để phân biệt dữ liệu cho sẵn
+
+```{r}
+x=c(1:3,11,51:53,101:105)
+dat=iris[x,]
+dt=select(dat,Petal.Length,Species)
+```
+
+```{r}
+tree1=tree(Species~.,data=iris)
+plot(tree1)
+text(tree1,pretty = 0)
+# Dự đoán
+y.pred=predict(tree1,data=iris,type="class")
+dat=mutate(iris,y.pred)
+table(y.pred,iris$Species)
+```
+
+#random forest
+```{r}
+rf1=randomForest(Species~.,data=iris,mtry=2,importance=TRUE,ntree=100)
+y.pred1=predict(rf1,data=iris,type="class")
+table(y.pred1,iris$Species)
+#mtry:số lượng biến đưa vào mô hình để dự đoán
+#ntree:số cây khi xây dựng mô hình
+
+```
+
+
+
+
+

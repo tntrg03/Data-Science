@@ -1,0 +1,116 @@
+---
+title: "P2"
+author: "huhu"
+date: "2023-12-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dslabs)
+data("murders")
+class(murders)
+
+```
+```{r}
+library(dplyr)
+tib<-as_tibble(murders)
+class(tib)
+```
+```{r}
+dim(movielens)
+str(movielens)
+class(movielens$title)
+class(movielens$genres)
+as.POSIXct(1260759144,origin=as.Date("1970-01-01"))
+data()
+```
+
+```{r}
+library(tidyverse)
+```
+
+## Kĩ thuật lấy ra các phân tử, kí tự
+```{r}
+# chỉ số kiểu logic
+x<-c(1,4,6,9,3,6)
+y<-c(FALSE,FALSE,TRUE,FALSE,TRUE,FALSE)
+x[y]
+```
+```{r}
+##chỉ số kiểu số
+x<-c(1,4,6,9,3,6)
+y<-c(2,5)
+x[y]
+```
+
+
+```{r}
+## có thể dùng attach(murders) để không phản dùng dấu $
+attach(murders)
+x<-murders$state
+y<-(murders$region=="West") & (murders$population>10^6)
+state[y]
+```
+```{r}
+dat<-murders
+dat<-mutate(dat,rate=total/population*10^6,.before = "total") # thêm cột mới có tên là 'rate'
+# .before="a" : cột mới đứng trước cột a
+head(dat)
+```
+
+```{r}
+## "filter"
+dat<-filter(dat,rate<=15)
+head(dat)
+```
+```{r}
+## "select"
+newdat<-select(dat,state,region,rate)
+# cách khác
+newdat1<-select(dat,-abb,-total,-population)
+head(newdat)
+head(newdat1)
+```
+```{r}
+## "arrage":sắp xếp
+dat<-arrange(murders,desc(total))
+head(dat)
+```
+```{r}
+# "pipes - %>% ": thực hiện đồng thời nhiều lệnh
+data<-murders
+data%>%mutate(data,rate=total/population*10^6)%>%select(region,rate)%>%filter(rate<=15)
+  
+```
+
+```{r}
+trump_tweets%>%arrange(-favorite_count)%>%
+  select(text,created_at)%>%
+  head(2)
+```
+
+```{r}
+murders%>%mutate(rate=total/population*10^6)%>%
+  group_by(region)%>% ## gộp dữ liệu theo region sau đó tính toán
+  mutate(region_rate=sum(total)/sum(population)*10^6)%>%
+  ungroup()%>%
+  group_by()%>%
+  mutate(country_rate=sum(total)/sum(population)*10^6)%>%
+  ungroup() # sau khi gộp thì phải bỏ gộp đi
+  
+```
+
+```{r}
+murders%>%mutate(rate=total/population*10^6)%>%
+  group_by(region)%>%
+  summarise(rate=sum(total)/sum(population)*10^6)%>% as.data.frame()
+```
+
+
+
+
+

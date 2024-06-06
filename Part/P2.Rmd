@@ -1,0 +1,215 @@
+---
+title: "P2"
+author: "huhu"
+date: "2023-12-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dslabs)
+data("murders")
+class(murders)
+
+```
+```{r}
+library(dplyr)
+tib<-as_tibble(murders)
+class(tib)
+```
+```{r}
+dim(movielens)
+str(movielens)
+class(movielens$title)
+class(movielens$genres)
+as.POSIXct(1260759144,origin=as.Date("1970-01-01"))
+data()
+```
+
+```{r}
+library(tidyverse)
+```
+
+## Kĩ thuật lấy ra các phân tử, kí tự
+```{r}
+# chỉ số kiểu logic
+x<-c(1,4,6,9,3,6)
+y<-c(FALSE,FALSE,TRUE,FALSE,TRUE,FALSE)
+x[y]
+```
+```{r}
+##chỉ số kiểu số
+x<-c(1,4,6,9,3,6)
+y<-c(2,5)
+x[y]
+```
+
+
+```{r}
+## có thể dùng attach(murders) để không phản dùng dấu $
+attach(murders)
+x<-murders$state
+y<-(murders$region=="West") & (murders$population>10^6)
+state[y]
+```
+```{r}
+dat<-murders
+dat<-mutate(dat,rate=total/population*10^6,.before = "total") # thêm cột mới có tên là 'rate'
+# .before="a" : cột mới đứng trước cột a
+head(dat)
+```
+
+```{r}
+## "filter"
+dat<-filter(dat,rate<=15)
+head(dat)
+```
+```{r}
+## "select"
+newdat<-select(dat,state,region,rate)
+# cách khác
+newdat1<-select(dat,-abb,-total,-population)
+head(newdat)
+head(newdat1)
+```
+```{r}
+## "arrage":sắp xếp
+dat<-arrange(murders,desc(total))
+head(dat)
+```
+```{r}
+# "pipes - %>% ": thực hiện đồng thời nhiều lệnh
+data<-murders
+data%>%mutate(data,rate=total/population*10^6)%>%select(region,rate)%>%filter(rate<=15)
+  
+```
+
+```{r}
+trump_tweets%>%arrange(-favorite_count)%>%
+  select(text,created_at)%>%
+  head(2)
+```
+
+```{r}
+murders%>%mutate(rate=total/population*10^6)%>%
+  group_by(region)%>% ## gộp dữ liệu theo region sau đó tính toán
+  mutate(region_rate=sum(total)/sum(population)*10^6)%>%
+  ungroup()%>%
+  group_by()%>%
+  mutate(country_rate=sum(total)/sum(population)*10^6)%>%
+  ungroup() # sau khi gộp thì phải bỏ gộp đi
+  
+```
+
+```{r}
+murders%>%mutate(rate=total/population*10^6)%>%
+  group_by(region)%>%
+  summarise(rate=sum(total)/sum(population)*10^6)%>% as.data.frame()
+```
+
+```{r}
+
+```
+
+
+```{r}
+murders%>%arrange(region,total)
+```
+
+```{r}
+str(gapminder)
+gapminder%>%mutate(gapminder,gdp_per_capita=gdp/population)%>%#thêm cột là gdp bình quân đầu người
+  filter(year==2000)%>%
+  arrange(-gdp_per_capita)%>%head(1)
+
+```
+```{r}
+#unique(gapminder$country)
+# gdp_per_cap của VN thay đổi thế nào từ năm 2000 đến 2010
+gapminder%>%mutate(gapminder,gdp_per_capita=gdp/population)%>%
+  filter(country=="Vietnam",year%in%c(2000 ,2010))%>%
+  select(year,country,gdp_per_capita)
+  
+  
+
+```
+
+```{r}
+x<-c(1,2,3,6,7)
+y<-1:5
+x%in%y
+```
+
+```{r}
+#4, lấy năm 2000,gdp_per_cap theo continent(châu lục)
+gapminder%>%#mutate(gdp_per_capita=gdp/population)%>%
+  filter(year==2000)%>%
+  group_by(continent)%>%
+  summarise(cont=sum(gdp,na.rm = TRUE)/sum(population,na.rm = TRUE),year_cont = unique(year))%>%
+  arrange(cont)%>%as.data.frame()
+  
+```
+```{r}
+#5,thứ hạng của VN về gdp_per_cap so với các quốc gia khác thay đổi thế nào từ 1990->2010
+library(ggplot2)
+gapminder%>%mutate(gdp_per_capita=gdp/population)%>%
+  filter(year %in% 1990:2010)%>%
+  group_by(year)%>%arrange(-gdp_per_capita)%>%
+  mutate(gdp_rank=1:length(gdp_per_capita))%>%
+  ungroup()%>%
+  filter(country=="Vietnam")%>%
+  arrange(year)%>%select(country,year,gdp_rank)%>%as.data.frame()%>%
+  ggplot(aes(x=as.numeric(year),y=as.numeric(gdp_rank)))+geom_line()+geom_point()+ggtitle("Thứ hạng gdp bình quân đầu người của VN")
+  
+```
+```{r}
+gapminder%>%mutate(gdp_per_capita=gdp/population)%>%
+  filter(country%in% c ("Lao","Vietnam","Thailand"))%>% 
+  #filter(continent=="Asia")%>%
+  ggplot()+geom_line(aes(x=year,y= gdp_per_capita,color = country))
+```
+```{r}
+gapminder%>%mutate(gdp_per_capita=gdp/population)%>%
+  filter(country%in% c ("United Kingdom","Germany","China","Japan"))%>% 
+  #filter(continent=="Europe")%>%
+  ggplot()+geom_line(aes(x=year,y= gdp,color = country))+ggtitle("GDP các quốc gia phát triển qua các năm")
+```
+
+
+```{r}
+dat2<-gapminder%>%mutate(gdp=gdp/10^9)%>%
+  filter(country %in% c("Japan"))
+plot(dat2$year,dat2$gdp,type="p")
+```
+
+```{r}
+library(ggplot2)
+library(dslabs)
+library(dplyr)
+
+p1<-us_contagious_diseases%>%filter(disease=="Measles")%>%
+  mutate(rate=count*1000/population)%>%
+  ggplot(aes(year,state,fill=rate))+geom_tile(color="grey")
+p1+scale_fill_gradientn(colors = c(rgb(1,1,1),rgb(1,0,0),
+                                   rgb(0.8,0,0)),trans = "sqrt")+
+  geom_vline(xintercept=1963, col = "blue", size=2) +
+  scale_x_continuous(expand=c(0,0))+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        legend.position="bottom",
+        text = element_text(size = 8))+
+  xlab(label="")+
+  ylab(label="")
+```
+
+
+
+
+
+
+
+
+

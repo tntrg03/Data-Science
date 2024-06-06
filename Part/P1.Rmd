@@ -1,0 +1,84 @@
+---
+title: "DC1"
+author: "huhu"
+date: "2023-12-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+x<-1
+y<-c("A","B")
+z<-matrix(5,2,2)
+f<-function(x) x^2
+t<-list(x,y,z)
+mylist<-list(x,y,z,t,f)
+str(mylist)
+names(mylist)<-c("x","y","z","t","f")
+mylist[[1]]## đang ở dang list
+mylist$x
+mylist$f(mylist$z)
+
+f1<-function(x) exp(x)
+mylist1<-c(mylist,f1)
+names(mylist1)<-c("x","y","z","t","f","f1")
+mylist1$f1(mylist1$z)
+```
+
+
+```{r}
+mysumm<-function(x){
+  x0<-paste0(round(sum(is.na(x))/length(x)*100,0),"%")
+  x1<-mean(x,na.rm = TRUE)
+  x2<-sd(x,na.rm = TRUE)
+  x3<-list(min(x,na.rm = TRUE),quantile(x,0.25,na.rm = TRUE),quantile(x,0.5,na.rm = TRUE),quantile(x,0.75,na.rm = TRUE),max(x,na.rm = TRUE))
+  x4<-plot(density(x,na.rm = TRUE))
+  mylist<-c(x0,x1,x2,x3,x4)
+  names(mylist)<-c("Number NA","mean","sd","quantile")
+  return(mylist)
+          
+}
+set.seed(1) 
+y<-rnorm(1000,0,1)
+t<-sample(1:1000,90,replace = FALSE)
+y[t]<-NA
+result<-mysumm(y)
+result
+```
+```{r}
+library(dslabs)
+re<-mysumm(murders$total)
+str(re)
+```
+
+```{r}
+re<-mysumm(greenhouse_gases$concentration) # nồng độ của ba loại khí co2,metan,nito trong 2000 năm
+re<-mysumm(admissions$applicants) # dữ liệu tuyển sinh của sáu chuyên ngành vào 1973
+```
+```{r}
+## Bộ dữ liệu chuẩn đoán ung thư vú với 569 quan sát trong đó các biến giải thích bao gồm mean,sd,giá trị xấu nhất của 10 đặc điểm hạt nhân
+cancer<-brca$y
+data_brca<-data.frame(cancer,brca$x)
+data_brca
+```
+```{r}
+set.seed(1)
+# chia tệp số liệu 
+# chia tẹp dữ liệu cho phép đánh giá hiệu suất của mô hình trên dữ liệu mà chưa từng thấy trước đây
+library(caTools)
+library(caret)
+split=sample.split(data_brca,SplitRatio = 0.8)
+train.set=subset(data_brca,split==TRUE)
+#summary(train.set)
+test.set=subset(data_brca,split==FALSE)
+```
+
+```{r}
+
+```
+
+
+

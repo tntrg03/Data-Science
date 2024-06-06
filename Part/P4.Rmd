@@ -1,0 +1,392 @@
+---
+title: "Regression"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+$y=f(x) +\epsilon$ với $\epsilon$ không giải thích được từ x, Var(epsilon)=sigma^2
+ hàm(mô hình) ước lượng được: f(x)_hat=y_hat (BNN)
+ E[(y-y_hat)^2]=E((f_hat-E(f_hat))^2)+(E(f_hat)-f)^2+sigma^2
+ 
+Đánh đổi giữa variance và bias
+lasso regression sẽ giúp tối ưu bias mà giữ variance ở mức có thể chấp nhận
+ 
+```{r}
+library(MASS)
+Boston # dữ liệu về giá nhà ở Boston 506 obs and 14 variables
+```
+```{r}
+library(lmtest)
+library(ggplot2)
+library(dplyr)
+attach(Boston)
+reg=lm(data=Boston,medv~log(lstat))
+summary(reg)
+Boston%>%ggplot(aes(medv,lstat))+geom_point()+geom_smooth(method = "gam",se=FALSE)+theme_minimal()
+```
+```{r}
+library(caret)
+set.seed(10)
+index<-createFolds(Boston$medv,k=5)#chia ngẫu nhiên tập dữ liệu Boston theo biến mục tiêu medv
+data1<-Boston[index$Fold1,]
+data2<-Boston[index$Fold2,]
+data3<-Boston[index$Fold3,]
+data4<-Boston[index$Fold4,]
+data5<-Boston[index$Fold5,]
+# hoặc
+test.index<-index[[5]]
+test.data<-Boston[test.index]
+train.dât<-Boston[-test.index]
+```
+
+
+
+```{r}
+# Xây dựng mô hình trên tập traindata
+traindata<-rbind(data1,data2,data3,data4)
+testdata<-data5
+lm1=lm(medv~lstat,data=traindata)
+summary(lm1)
+# Dự đoán trên tập testdata
+yhat_test=34.39709-0.93414*testdata$lstat
+a=RMSE(yhat_test,testdata$medv)
+RMSE(mean(testdata$medv),testdata$medv)# nếu không có dữ liệu để xây dựng mô hình
+```
+```{r}
+traindata<-rbind(data1,data2,data3,data5)
+testdata<-data4
+lm2=lm(medv~lstat,data=traindata)
+summary(lm2)
+# Dự đoán trên tập testdata
+yhat_test=34.64078-0.96563*testdata$lstat
+b=RMSE(yhat_test,testdata$medv)
+```
+```{r}
+traindata<-rbind(data1,data2,data4,data5)
+testdata<-data3
+lm3=lm(medv~lstat,data=traindata)
+summary(lm3)
+# Dự đoán trên tập testdata
+yhat_test=34.46979-0.94020*testdata$lstat
+c=RMSE(yhat_test,testdata$medv)
+```
+```{r}
+traindata<-rbind(data1,data5,data3,data4)
+testdata<-data2
+lm4=lm(medv~lstat,data=traindata)
+summary(lm4)
+# Dự đoán trên tập testdata
+yhat_test=34.59437-0.94624*testdata$lstat
+d=RMSE(yhat_test,testdata$medv)
+```
+```{r}
+traindata<-rbind(data5,data2,data3,data4)
+testdata<-data1
+lm5=lm(medv~lstat,data=traindata)
+
+# Dự đoán trên tập testdata
+yhat_test=34.6874-0.9661*testdata$lstat
+e=RMSE(yhat_test,testdata$medv)
+sum(a,b,c,d,e)/5
+```
+
+
+```{r}
+# Dùng vòng lặp để tính sai số xác thực chéo
+saiso=rbind()
+for(i in 1:5){
+  test.index<-index[[i]]
+  test.data<-Boston[test.index,]
+  train.data<-Boston[-test.index,]
+  #xây dựng mô hình
+  lm1=lm(medv~rm+black,data=train.data)
+  #dudoan
+  medv.dudoan<-predict(lm1,newdata=test.data)
+  saiso[i]=RMSE(medv.dudoan,test.data$medv)
+  
+}
+mean(saiso)
+```
+Best subset selection: thử qua tất cả các mô hình có thể xây dựng trong bộ dự liệu. Ví dụ tất cả mô hình từ 13 biến thì có $2^{13}$ 
+
+```{r}
+Binary<-function(n){
+  tg<-c()
+  if (n==0){
+    tg<-c(0)
+  } else {
+    k<-floor(log2(n))+1
+    for (i in 1:k){
+      if (n%%2==0){
+        tg<-c(0,tg)
+        n<-n/2
+      } else {
+        tg<-c(1,tg)
+        n<-(n-1)/2
+      }
+    }
+  }
+  Binary<-as.logical(tg)
+}
+
+cv.lm<-function(dat,k,varname){
+  library(caret)
+  library(MASS)
+  #library(tidyverse)
+  #dat<-Carseats
+  #varname="Sales"
+  set.seed(1)
+  
+  ind<-which(names(dat)==varname)
+  y<-dat[,ind]
+  x<-dat[,-ind]
+  p<-dim(x)[2]
+  cv.cal<-rep(0,2^p-1)
+  
+  index<-createFolds(y,k)
+  
+  for (n in 1:(2^p-1)){
+    v.s<-c(rep(FALSE,p-length(Binary(n))),Binary(n))
+    if (sum(v.s)==1){
+      dat1<-as.matrix(x[,v.s])
+      dat1<-data.frame(dat1)
+      names(dat1)<-names(x)[v.s]
+    } else {
+      dat1<-x[,v.s]
+    }
+    
+    error<-rep(0,k)
+    
+    for (j in 1:k){
+      if (sum(v.s)==1){
+        x.train<-as.matrix(dat1[-index[[j]],])
+        x.train<-data.frame(x.train)
+        names(x.train)<-names(dat1)
+        
+        x.test<-as.matrix(dat1[index[[j]],])
+        x.test<-data.frame(x.test)
+        names(x.test)<-names(dat1)
+      } else {
+        x.train<-dat1[-index[[j]],]
+        x.test<-dat1[index[[j]],]
+      }
+      y.train<-y[-index[[j]]]
+      y.test<-y[index[[j]]]
+      
+      model<-lm(y.train~.,data=x.train)
+      pred<-predict(model,x.test)
+      error[j]<-sqrt(mean((pred-y.test)^2))
+    }
+    cv.cal[n]<-mean(error)
+  }
+  
+  n<-which.min(cv.cal)
+  v.s<-c(rep(FALSE,p-length(Binary(n))),Binary(n))
+  #name of variable in the best model
+  result<-list(min(cv.cal),names(x)[v.s])
+  names(result)<-c("cv.error","variables")
+  return(result)
+}
+```
+
+```{r}
+cv.lm(Boston,k=5,"medv")
+```
+
+
+```{r}
+poly1<-lm(medv~poly(lstat,degree = 2,row= TRUE,data=train.data))
+summary(poly1)
+RMSE(predict(poly1,newdata=test.data),test.data$medv)
+```
+
+***
+# Tuyến tính
+```{r}
+library(ggplot2)
+library(dplyr)
+library(MASS)
+Boston%>%ggplot(aes(y=medv,x=lstat))+geom_point(color="blue",size=3,shape=21)+
+  geom_smooth(method = "lm",formula = y~x,se=FALSE,col="red")
+```
+# Đa thức
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(MASS)
+Boston%>%ggplot(aes(y=medv,x=lstat))+geom_point(color="blue",size=3,shape=21)+
+  geom_smooth(method = "lm",formula = y~x,se=FALSE,col="red")+
+  geom_smooth(method="lm",formula=y~poly(x,degree = 3,raw= TRUE),se=FALSE,col="green")
+```
+```{r}
+train<-Boston[-test_index,]
+test<-Boston[test_index,]
+poly.fit<-lm(medv~poly(lstat,2, raw=TRUE),data=train)
+poly.pred<-predict(poly.fit,test)
+sqrt(mean((poly.pred-test$medv)^2))
+```
+
+# Cubic spline
+sử dụng *bs()* và phải khai báo điểm cắt
+```{r}
+library(splines)
+k=3 # số nút chia tập dữ liệu 
+prob=(1:k)/(k+1)
+myknots<-quantile(Boston$lstat,probs = prob)
+Boston%>%ggplot(aes(y=medv,x=lstat))+geom_point(color="blue",size=3,shape=21)+
+  geom_smooth(method="lm",formula=y~bs(x,knots=myknots),se=FALSE,col="darkred")+geom_vline(xintercept = myknots,color="grey40",linetype=2)
+```
+```{r}
+library(caret)
+set.seed(10)
+index<-createFolds(Boston$medv,k=5)
+# Dùng vòng lặp để tính sai số xác thực chéo
+saiso=rep(0,5)
+k=5 # số nút chia tập dữ liệu 
+prob=(1:k)/(k+1)
+for(i in 1:5){
+  test.index<-index[[i]]
+  test.data<-Boston[test.index,]
+  train.data<-Boston[-test.index,]
+  #TÌm điểm cắt
+  myknots<-quantile(train.data$lstat,probs = prob)
+  #xây dựng mô hình
+  bs1<-lm(medv~bs(lstat,knots = myknots),data = train.data)
+  #dudoan
+  medv.dudoan<-predict(bs1,newdata=test.data)
+  saiso[i]=RMSE(medv.dudoan,test.data$medv)
+  
+}
+mean(saiso)
+```
+Thử lần lượt theo k thì k=5 cho sai số xác thực chéo nhỏ nhất
+
+
+
+# Natural cubic spline
+```{r}
+library(splines)
+k=7 # số nút chia tập dữ liệu 
+prob=(1:k)/(k+1)
+myknots<-quantile(Boston$lstat,probs = prob)
+Boston%>%ggplot(aes(y=medv,x=lstat))+geom_point(color="blue",size=3,shape=21)+
+  geom_smooth(method="lm",formula=y~ns(x,knots=myknots[2:(k-1)],Boundary.knots = myknots[c(1,k)]),se=FALSE,col="red4")+geom_vline(xintercept = myknots,color="black",linetype=2)+theme_classic()
+```
+
+```{r}
+library(caret)
+set.seed(10)
+index<-createFolds(Boston$medv,k=5)
+# Dùng vòng lặp để tính sai số xác thực chéo
+saiso=rep(0,5)
+k=8 # số nút chia tập dữ liệu 
+prob=(1:k)/(k+1)
+for(i in 1:5){
+  test.index<-index[[i]]
+  test.data<-Boston[test.index,]
+  train.data<-Boston[-test.index,]
+  #TÌm điểm cắt
+  myknots<-quantile(train.data$lstat,probs = prob)
+  #xây dựng mô hình
+  ns1<-lm(medv~ns(lstat,knots = myknots[2:(k-1)],Boundary.knots = myknots[c(1,k)]),data = train.data)
+  #dudoan
+  medv.dudoan<-predict(ns1,newdata=test.data)
+  saiso[i]=RMSE(medv.dudoan,test.data$medv)
+  
+}
+mean(saiso)
+
+```
+- K=8 thì mô hình natural... cho cv error nhỏ nhất
+
+
+Nên so sánh 2 mô hình cubic spline và natural cubic spline có cùng tham số (vdu cubic spline với k=3 thì natural k=7)
+
+# Smoothing spline
+-phải sử dụng gam() cho mô hình cộng tính tổng quát
+
+```{r}
+library(caret)
+library(gam)
+set.seed(10)
+index<-createFolds(Boston$medv,k=5)
+# Dùng vòng lặp để tính sai số xác thực chéo
+saiso=rep(0,5)
+df0=10.5
+for(i in 1:5){
+  test.index<-index[[i]]
+  test.data<-Boston[test.index,]
+  train.data<-Boston[-test.index,]
+  
+  #xây dựng mô hình
+  ss1<-gam(medv~s(lstat,df=df0),data = train.data)
+  #dudoan
+  medv.dudoan<-predict(ss1,newdata=test.data)
+  saiso[i]=RMSE(medv.dudoan,test.data$medv)
+  
+}
+mean(saiso)
+```
+# GAM (Generalized Additive Model)
+Cho phép ước lượng đồng thời mô hình nhiều biến
+$y=f_1(x_1)+f_2(x_2)+...+f_i(x_i)$ trong đó các $f_i$ là 1 trong 4 dạng ở trên
+
+- Để ước lượng ra các tham số của từng hàm f_i đồng thời thì phải thông qua quá trình Backfitting 
+- Ví dụ ul y~x1 lấy ra được sai số, sau đó ul sai số trê theo x2,.. lần lượt như vậy....
+## Backfitting
+
+```{r}
+#lm(medv~lstat+rm,data=Boston)
+b0=0 # he so chan
+b1=0 # he so lstat
+b2=0 # he so rm
+N=10
+y=Boston$medv
+Boston=mutate(Boston,saiso=medv-mean(medv))
+for(i in 1:N){
+  lm1=lm(saiso~lstat,data=Boston)
+  b0=lm1$coefficients[1]
+  b1=lm1$coefficients[2]
+  Boston$saiso=Boston$saiso-b0-b1*Boston$lstat
+  
+  lm2=lm(saiso~rm,data=Boston)
+  b0=lm2$coefficients[1]
+  b2=lm2$coefficients[2]
+  Boston$saiso=Boston$saiso-b0-b2*Boston$rm
+  print(c(b1,b2))
+}
+```
+```{r}
+library(caret)
+library(gam)
+set.seed(10)
+index<-createFolds(Boston$medv,k=5)
+# Dùng vòng lặp để tính sai số xác thực chéo
+saiso=rep(0,5)
+
+for(i in 1:5){
+  test.index<-index[[i]]
+  test.data<-Boston[test.index,]
+  train.data<-Boston[-test.index,]
+  
+  #xây dựng mô hình
+  # không gán df thì mặc định là 4
+  ss1<-gam(medv~s(lstat)+s(rm)+s(crim)+s(indus)+s(zn)+(chas)+s(nox)+s(age)+s(dis)+(rad)+s(black)+s(tax)+s(ptratio),data = train.data)
+  #dudoan
+  medv.dudoan<-predict(ss1,newdata=test.data)
+  saiso[i]=RMSE(medv.dudoan,test.data$medv)
+  
+}
+mean(saiso)
+```
+## Thử 13 biến thì sao?
+
+ tìm tham số $\lamda$ sao cho sai số xác thực chéo của mô hình GAM nhỏ hơn 3.5

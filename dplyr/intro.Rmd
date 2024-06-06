@@ -1,0 +1,61 @@
+---
+title: "dplyr"
+author: "GR8"
+date: "2024-01-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#bai1
+library(readr)
+library(dplyr)
+library(tidyr)
+dplyr_data <- read.csv("E:/DC/dplyr/dplyr_data_training.csv")
+```
+mutate
+relocate
+select
+filter
+slice
+
+```{r}
+#bai2
+#a
+sum(duplicated(dplyr_data))
+#b
+dplyr_data<-dplyr_data[1:length(dplyr_data)-2]
+dplyr_data<-dplyr_data%>%select(c(1:ncol(dplyr_data)-2))
+#c
+dplyr_data%>%slice(9404:9430)#Chọn hàng
+dplyr_data
+```
+```{r}
+#bai3: sử dụng apply() để chuyển các biến định tính thành dạng factor
+#Change the variable class to suitable from
+factor_variable = c("Attrition_Flag", "Gender", "Education_Level",
+"Marital_Status", "Income_Category", "Card_Category")
+dplyr_data[factor_variable] = lapply(dplyr_data[factor_variable], as.factor)
+glimpse(dplyr_data)
+```
+
+```{r}
+dplyr_data%>%distinct()#lấy những giá trị kh trùng nhau
+```
+```{r}
+#Bai 5
+dplyr_data%>%mutate(ID=c(1:nrow(dplyr_data)))
+dplyr_data%>%mutate(cre=Credit_Limit/Months_on_book,.after = Credit_Limit)
+```
+```{r}
+dplyr_data%>%filter(dplyr_data$cre>mean(dplyr_data$cre))
+```
+
+
+
+
+
+

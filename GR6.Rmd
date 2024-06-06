@@ -1,0 +1,488 @@
+---
+title: "ASSIGNMENT-VISUALIZATION"
+author:
+  - Nguyen Quynh Trang_11217002
+  - Truong Ngoc Thuy Trang_11217004
+  - Trinh Thu Huyen_11212771
+  - Bui Thu Ha_11216991
+date: "MARCH,2024"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+    self_contained: yes
+header-includes:
+- \usepackage{tikz}
+- \usepackage{pgfplots}
+- \usetikzlibrary{arrows,automata,positioning}
+- \usepackage[utf8]{inputenc}
+- \usepackage[utf8]{vietnam}
+- \usepackage{etoolbox}
+- \usepackage{xcolor}
+- \makeatletter
+- \preto{\@verbatim}{\topsep=0pt \partopsep=-0pt}
+- \makeatother
+- \DeclareMathOperator*{\argmax}{arg\,max}
+- \newcommand\tstrut{\rule{0pt}{3ex}}
+- \newcommand\bstrut{\rule[-2.5ex]{0pt}{0pt}}
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+library(forcats)
+library(ggpubr)
+library(grid)
+library(gridExtra)
+library(forcats)
+library(rworldmap)
+library(plotly)
+library(Ecdat)
+library(gganimate)
+library(cowplot)
+
+setwd("E:/DC/BTN/")
+WH <- read_excel("E:/DC/Nhóm 6 -Thứ tự 6//WH.xlsx")
+WH2022 <- read_excel("E:/DC/Nhóm 6 -Thứ tự 6//WH2022.xlsx")
+WH$Continent<-as.factor(WH$Continent)
+WH$Income_Group<-as.factor(WH$Income_Group)
+attach(WH)
+```
+
+------------------------------------------------------------------------
+
+# I.Tổng quan về dữ liệu
+
+## 1.1. Nguồn gốc của bộ dữ liệu
+
+<div align="justify">
+
+Bộ dữ liệu "World Happiness" được lấy từ website <https://worldhappiness.report/>. Bộ dữ liệu về thang đo cuộc sống hạnh phúc thế giới là một tài nguyên quan trọng trong việc nghiên cứu và đánh giá sự phát triển của các quốc gia trên toàn cầu. Bộ dữ liệu này thường chứa thông tin về một loạt các chỉ số và yếu tố ảnh hưởng đến mức độ hạnh phúc và chất lượng cuộc sống của dân số, từ GDP bình quân đầu người, đến mức độ hỗ trợ xã hội và tự do cá nhân. Thông qua việc phân tích các dữ liệu này, nhà nghiên cứu có thể hiểu rõ hơn về mối quan hệ giữa các yếu tố kinh tế, xã hội, và tâm lý với sự hạnh phúc của con người. Đồng thời, bộ dữ liệu này cũng cho phép so sánh giữa các quốc gia để đo lường mức độ tiến bộ và đề xuất các chính sách để tăng cường hạnh phúc và phát triển bền vững trên toàn cầu.
+
+Bộ dữ liệu chứa 1320 quan sát và 13 biến là các chỉ số hay yếu tố ảnh hưởng đến mức độ hạnh phúc của các nước trên thế giới
+
+## 1.2. Tìm hiểu các biến
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+table<-data.frame(
+  Feature_Name=c("Country","Continent","Income_Group","Life_Ladder","Log_GDP_per_capita","Social_support","Healthy_life_expectancy_at_birth","Freedom_to_make_life_choices","Generosity","Perceptions_of_corruption","Positive_affect","Negative_affect"),
+  Type=c("Character","Factor","Factor","Numeric","Numeric","Numeric", "Numeric","Numeric","Numeric","Numeric","Numeric","Numeric"),
+  Label_Description=c("Tên quốc gia"
+                       ,"Lục địa (6 categories)","Nhóm thu nhập (4 categories)"
+                       ,"Mức độ hạnh phúc của quốc gia",
+                       "Logarit của GDP bình quân đầu người","Chỉ số hỗ trợ xã hội",
+                       "Số năm trung bình sống khỏe mạnh","Chỉ số tự do lựa chọn cuộc sống","Sự hào phóng","Mức độ nhận thức về tham nhũng","Ảnh hưởng tích cực","Ảnh hưởng tiêu cực"))
+
+
+
+kbl(table, caption = "Data “Life_ladder” label and description")%>%
+  row_spec(row =0, bold= TRUE, color = "black", background = "#006241") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+```
+
+# II. Thống kê mô tả
+
+## 2.1. Xử lý outlier
+
+### Visual kiểm tra outlier
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+a1<-ggplot(WH)+geom_boxplot(aes(Life_Ladder),fill="skyblue")
+a<-ggplot(WH)+geom_boxplot(aes(Log_GDP_per_capita),fill="skyblue")
+b<-ggplot(WH)+geom_boxplot(aes(Perceptions_of_corruption),fill="skyblue")
+c<-ggplot(WH)+geom_boxplot(aes(Healthy_life_expectancy_at_birth),fill="salmon")
+d<-ggplot(WH)+geom_boxplot(aes(Generosity),fill="salmon")
+e<-ggplot(WH)+geom_boxplot(aes(Freedom_to_make_life_choices),fill="salmon")
+f<-ggplot(WH)+geom_boxplot(aes(Positive_affect),fill="seagreen")
+g<-ggplot(WH)+geom_boxplot(aes(Negative_affect),fill="seagreen")
+h<-ggplot(WH)+geom_boxplot(aes(Social_support),fill="seagreen")
+
+plot_grid(a1,a,b,c,d,e,f,g,h)
+```
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+h1=ggplot(WH)+geom_histogram(aes(Life_Ladder),fill="skyblue",color="black")
+h2=ggplot(WH)+geom_histogram(aes(Social_support),fill="skyblue",color="black")
+h3=ggplot(WH)+geom_histogram(aes(Log_GDP_per_capita),fill="skyblue",color="black")
+h4=ggplot(WH)+geom_histogram(aes(Perceptions_of_corruption),fill="skyblue",color="black")
+h5=ggplot(WH)+geom_histogram(aes(Healthy_life_expectancy_at_birth),fill="skyblue",color="black")
+h6=ggplot(WH)+geom_histogram(aes(Generosity),fill="skyblue",color="black")
+h7=ggplot(WH)+geom_histogram(aes(Freedom_to_make_life_choices),fill="skyblue",color="black")
+h8=ggplot(WH)+geom_histogram(aes(Positive_affect),fill="skyblue",color="black")
+h9=ggplot(WH)+geom_histogram(aes(Negative_affect),fill="skyblue",color="black")
+plot_grid(h1,h2,h3,h4,h5,h6,h7,h8,h9)
+```
+
+```{r include=FALSE}
+library(dplyr)
+q1<-quantile(WH$Life_Ladder,0.25)
+q3<-quantile(WH$Life_Ladder,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(Life_Ladder<(q1-nn)|Life_Ladder>(q3+nn))
+outlier
+WH$Life_Ladder<-replace(WH$Life_Ladder,WH$Life_Ladder<(q1-nn)|WH$Life_Ladder>(q3+nn),mean(WH$Life_Ladder))
+WH
+```
+
+```{r include=FALSE}
+
+q1<-quantile(WH$Social_support,0.25)
+q3<-quantile(WH$Social_support,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(Social_support<(q1-nn)|Social_support>(q3+nn))
+outlier
+WH$Social_support<-replace(WH$Social_support,WH$Social_support<(q1-nn)|WH$Social_support>(q3+nn),mean(WH$Social_support))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Log_GDP_per_capita,0.25)
+q3<-quantile(WH$Log_GDP_per_capita,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(Log_GDP_per_capita<(q1-nn)|Log_GDP_per_capita>(q3+nn))
+outlier
+WH$Log_GDP_per_capita<-replace(WH$Log_GDP_per_capita,WH$Log_GDP_per_capita<(q1-nn)|WH$Log_GDP_per_capita>(q3+nn),mean(WH$Log_GDP_per_capita))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Healthy_life_expectancy_at_birth,0.25)
+q3<-quantile(WH$Healthy_life_expectancy_at_birth,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(WH$Healthy_life_expectancy_at_birth<(q1-nn)|WH$Healthy_life_expectancy_at_birth>(q3+nn))
+outlier
+WH$Healthy_life_expectancy_at_birth<-replace(WH$Healthy_life_expectancy_at_birth,WH$Healthy_life_expectancy_at_birth<(q1-nn)|WH$Healthy_life_expectancy_at_birth>(q3+nn),mean(WH$Healthy_life_expectancy_at_birth))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Freedom_to_make_life_choices,0.25)
+q3<-quantile(WH$Freedom_to_make_life_choices,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(WH$Freedom_to_make_life_choices<(q1-nn)|WH$Freedom_to_make_life_choices>(q3+nn))
+outlier
+WH$Freedom_to_make_life_choices<-replace(WH$Freedom_to_make_life_choices,WH$Freedom_to_make_life_choices<(q1-nn)|WH$Freedom_to_make_life_choices>(q3+nn),mean(WH$Freedom_to_make_life_choices))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Generosity,0.25)
+q3<-quantile(WH$Generosity,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(WH$Generosity<(q1-nn)|WH$Generosity>(q3+nn))
+outlier
+WH$Generosity<-replace(WH$Generosity,WH$Generosity<(q1-nn)|WH$Generosity>(q3+nn),mean(WH$Generosity))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Perceptions_of_corruption,0.25)
+q3<-quantile(WH$Perceptions_of_corruption,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(WH$Perceptions_of_corruption<(q1-nn)|WH$Perceptions_of_corruption>(q3+nn))
+outlier
+WH$Perceptions_of_corruption<-replace(WH$Perceptions_of_corruption,WH$Perceptions_of_corruption<(q1-nn)|WH$Perceptions_of_corruption>(q3+nn),mean(WH$Perceptions_of_corruption))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Positive_affect,0.25)
+q3<-quantile(WH$Positive_affect,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(WH$Positive_affect<(q1-nn)|WH$Positive_affect>(q3+nn))
+outlier
+WH$Positive_affect<-replace(WH$Positive_affect,WH$Positive_affect<(q1-nn)|WH$Positive_affect>(q3+nn),mean(WH$Positive_affect))
+WH
+```
+
+```{r include=FALSE}
+q1<-quantile(WH$Negative_affect,0.25)
+q3<-quantile(WH$Negative_affect,0.75)
+IQR<-q3-q1
+nn<-1.5*IQR
+outlier<-WH%>%filter(WH$Negative_affect<(q1-nn)|WH$Negative_affect>(q3+nn))
+outlier
+WH$Negative_affect<-replace(WH$Negative_affect,WH$Negative_affect<(q1-nn)|WH$Negative_affect>(q3+nn),mean(WH$Negative_affect))
+WH
+```
+
+### Sau khi xử lý outlier
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+a1<-ggplot(WH)+geom_boxplot(aes(Life_Ladder),fill="skyblue")
+a<-ggplot(WH)+geom_boxplot(aes(Log_GDP_per_capita),fill="skyblue")
+b<-ggplot(WH)+geom_boxplot(aes(Perceptions_of_corruption),fill="skyblue")
+c<-ggplot(WH)+geom_boxplot(aes(Healthy_life_expectancy_at_birth),fill="salmon")
+d<-ggplot(WH)+geom_boxplot(aes(Generosity),fill="salmon")
+e<-ggplot(WH)+geom_boxplot(aes(Freedom_to_make_life_choices),fill="salmon")
+f<-ggplot(WH)+geom_boxplot(aes(Positive_affect),fill="seagreen")
+g<-ggplot(WH)+geom_boxplot(aes(Negative_affect),fill="seagreen")
+h<-ggplot(WH)+geom_boxplot(aes(Social_support),fill="seagreen")
+
+plot_grid(a1,a,b,c,d,e,f,g,h)
+```
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+h1=ggplot(WH)+geom_histogram(aes(Life_Ladder),fill="skyblue",color="black")
+h2=ggplot(WH)+geom_histogram(aes(Social_support),fill="skyblue",color="black")
+h3=ggplot(WH)+geom_histogram(aes(Log_GDP_per_capita),fill="skyblue",color="black")
+h4=ggplot(WH)+geom_histogram(aes(Perceptions_of_corruption),fill="skyblue",color="black")
+h5=ggplot(WH)+geom_histogram(aes(Healthy_life_expectancy_at_birth),fill="skyblue",color="black")
+h6=ggplot(WH)+geom_histogram(aes(Generosity),fill="skyblue",color="black")
+h7=ggplot(WH)+geom_histogram(aes(Freedom_to_make_life_choices),fill="skyblue",color="black")
+h8=ggplot(WH)+geom_histogram(aes(Positive_affect),fill="skyblue",color="black")
+h9=ggplot(WH)+geom_histogram(aes(Negative_affect),fill="skyblue",color="black")
+plot_grid(h1,h2,h3,h4,h5,h6,h7,h8,h9)
+```
+
+## 2.2. Numeric variables
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE}
+
+table1<-data.frame(
+  Numeric_variables=c("Life_Ladder","Log_GDP_per_capita",
+                       "Social_support","Healthy_life_expectancy_at_birth","Freedom_to_make_life_choices","Generosity","Perceptions_of_corruption","Positive_affect","Negative_affect"),
+  Min=c("2.179","5.935","0.502","48.80","0.447","-0.338","0.424","0.352","0.0830"),
+  Mean=c("5.524","9.462","0.8161","64.41","0.7802","-0.01139","0.7773","0.6598","0.2789"),
+  Median=c("5.575","9.562","0.8355","65.7","0.791","-0.025","0.791","0.67","0.271"),
+  Max=c("7.889","11.664","0.9870","79.52","0.9850","0.374","0.976","0.884","0.512"),
+  SD= c("1.132","1.135","0.111","6.169","0.117","0.140","0.116","0.101","0.084")
+  
+)
+
+ 
+kbl(table1, caption = "Descriptive statistics of numeric variables") %>%
+  row_spec(row =0, bold= TRUE, color = "black", background = "#006241") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "center")
+```
+
+## 2.3. Categorical variables
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.height="100%", out.width="100%"}
+table2<-data.frame(
+  Category=c("Africa","Asia","Europe","South America","North America","Oceania","High","Upper_middle","Low","Lower_middle"),
+  Count=c("33","34","42","10","11","2","41","36","21","34"),
+  Frequency=c("25%","25.76%","31.82%","7.58%","8.33%","1.52%","31.06%","27.27%","15.91%","25.76%"))
+
+kbl(table2, caption = "Descriptive statistics of categorical variables") %>%
+  kable_classic(html_font = "Calibri") %>%
+  kable_styling(bootstrap_options = "hover", full_width = F, position = "center") %>%
+  row_spec(row =0, bold= TRUE, color = "black", background = "#006241") %>%
+  pack_rows("Region", 1,6) %>%
+  pack_rows("income_group", 7,10)%>%
+  scroll_box(width = "100%", height = "100%", fixed_thead = TRUE) 
+```
+
+------------------------------------------------------------------------
+
+# III. World Happiness Report từ 2013-2022
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+avg=WH%>%group_by(Continent,Year)%>%
+  summarise(Avg_Happiness=mean(Life_Ladder))
+
+ggplot(avg,aes(Year,Avg_Happiness,color=Continent))+
+  geom_line(size=2)+
+  geom_point(size=3)+
+  labs(x = "Year", y = "Average Happiness Score", title = "Average Happiness Score by Continent Over Year")
+```
+
+-   Chỉ số Life Ladder trung bình giữa các châu lục có sự khác biệt. Châu Đại Dương cao nhất
+-   Chỉ số hạnh phúc của Châu Âu có tăng từ 2013-2021 và giảm trong năm 2022
+-   Ở khu vực Bắc Mĩ và Nam Mĩ có mức trung bình gần như nhau năm 2013, có sự đối lập trong năm 2015 đến cuối năm 2017 sau đó có xu hướng thay đổi khá tương đồng
+-   Trong khi đó, châu Á không biến động nhiều và trung bình Life Ladder ở châu Phi là thấp nhất
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+ggplot(WH, aes(Log_GDP_per_capita,Life_Ladder,color=Continent))+
+  geom_point(size=3)+
+  labs(title = 'Year: {floor(frame_time)}', x='Log GDP per capita', y='Life Ladder')+
+  transition_time(Year)+
+  ease_aes()
+```
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE, out.height="100%"}
+
+ggplot(WH, aes(Log_GDP_per_capita,Life_Ladder,color=Continent))+
+  geom_point(size=3)+
+  facet_wrap(~Continent)+
+  labs(title = 'Year: {floor(frame_time)}', x='Log GDP per capita', y='Life Ladder')+
+  transition_time(Year)+
+  ease_aes()
+```
+
+Biểu đồ Scatter thể hiện mối quan hệ giữa biến Log GDP per capita và Life Ladder trong thời gian 10 năm. Nhìn chung các nước thường có thu nhập cao thì sẽ có chỉ số hạnh phúc cao. Tuy nhiên xu hướng chung này vẫn có những điểm phá vỡ. Khi trực quan kĩ hơn ở từng châu lục, có thể thấy châu Phi mặc dù là một khu vực có nền kinh tế thấp, chỉ số Life Ladder cũng thấp nhất nhưng có 3 nước là Mauritius, Garbon, Botswana lại nằm trong nhóm thu nhập trung bình cao và nằm trên so với xu hướng của châu Phi. Ở cả 5 châu còn lại, sự biến động của Log GDP per capita không nhiều nhưng chỉ số Life Ladder lại biến động nhiều.
+
+```{r echo=FALSE, , warning=FALSE, out.height="100%", out.width="100%"}
+             
+             WH%>%plot_ly(x=Life_Ladder,y=Log_GDP_per_capita,
+                          text=~paste("Country:",Country,
+                                      "<br>","Area:",Continent,
+                                      "<br>","Log_GDP_per_capita:",Log_GDP_per_capita,sep=""))%>%
+               add_markers(size=~Log_GDP_per_capita,color=~Continent,frame=~Year,colors=c("#006241","#5BBD2B","#00A06B","#C8E2B1"))%>%
+               layout(title="",xaxis=list(title="Life Ladder"),yaxis=list(title="Log_GDP_per_capita"))
+             
+```
+
+------------------------------------------------------------------------
+
+# IV. World Happiness Report 2022
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+  ggplot(WH2022, aes(Life_Ladder)) +
+  geom_histogram(color="skyblue", fill="lightblue") +xlim(0,10)
+  labs(title = "Biểu đồ histogram cho chỉ số Life Ladder", x = "Số lượng", y = "Điểm số Life Ladder") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+-   Chỉ số Life Ladder của các nước củ yếu nằm trong khoảng từ 4.5-7.
+-   Mức chỉ số Life Ladder phổ biến nhất dao dộng xung quanh khu vực 6 điểm. Có rất ít các nước nằm trong tình tình trạng kém hạnh phúc với số điểm từ 0-2. Không có quốc gia nào có chỉ số hài lòng với cuộc sống trên 8.
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+df<-WH%>%filter(Year=="2022")
+x=df$Country
+y=df$Life_Ladder
+df1 <- data.frame(country = x,value = y)
+
+j <- joinCountryData2Map(df1, joinCode = "NAME", nameJoinColumn = "country")
+
+mapCountryData(j, nameColumnToPlot = "value", 
+             mapTitle = "Life Ladder in the world 2022",borderCol = "#8B4513", colourPalette = 'terrain' )
+```
+
+------------------------------------------------------------------------
+
+## 4.1. Chỉ số Life Ladder giữa các quốc gia
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+WH2022 %>%
+  ggplot(aes(x = Life_Ladder, fill = Income_Group)) +
+  geom_histogram(binwidth = 0.3, color = "#00CCCC",) +
+  xlim(0, 10) +
+  scale_fill_brewer(palette = "Blues")+
+theme(panel.background = element_rect(fill = "white"))
+```
+
+-   Các nước có chỉ số Life Ladder cao hầu hết là các nước thuộc nhóm thu nhập cao trong khi các nước có chỉ số Life Ladder thấp là các nước thuộc nhóm thu nhập thấp hoặc trung bình thấp.
+
+-   Tuy nhiên vẫn có nhiều nước thuộc nhóm thu nhập cao có chỉ số Life Ladder ở mức dưới 6.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+WH2022[1:10,] %>%
+  ggplot(aes(x = reorder(Country, Life_Ladder), y = Life_Ladder)) +
+  geom_bar(stat = "identity", fill = "#00CCCC", alpha = 1, width = 0.5) +
+  coord_flip() +
+  xlab("") + ggtitle("Top 10 countries with the Highest Life Ladder")+
+  theme_bw()
+
+```
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+WH2022[122:132,] %>%
+  ggplot(aes(x = reorder(Country, Life_Ladder), y = Life_Ladder) ) +
+    geom_bar(stat="identity", fill="#f68060", alpha=1, width=0.5) +
+    coord_flip() +
+  xlab("")  + ggtitle("Top 10 countries with the Lowest Life Ladder")+
+    theme_bw()
+
+```
+
+------------------------------------------------------------------------
+
+## 4.2. Log_GDP_per_capita, Healthy_life_expectancy
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+ggplot(WH2022,aes(Log_GDP_per_capita,Healthy_life_expectancy_at_birth,color = Continent,size = Rank)) +  
+  geom_point() +  
+  labs(x = "Log GDP per cap") +  
+  labs(y = "Healthy_life_expectancy") +  
+  labs(color = "Continent")
+```
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+ggplot(WH2022,aes(Life_Ladder,Healthy_life_expectancy_at_birth,color = Income_Group,size = Rank)) +  
+  geom_point() +  
+  labs(x = "Log GDP per cap") +  
+  labs(y = "Healthy_life_expectancy") +  
+  labs(color = "Income_Group")
+```
+
+## 4.2. Log_GDP_per_capita
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+
+ggplot(WH2022,aes(Life_Ladder,Log_GDP_per_capita,color=Continent),text=~paste("Country:",Country,
+                              "<br>","Area:", Continent,
+                              "<br>","Log_GDP_per_capita:",Log_GDP_per_capita,sep="")) +geom_point(size=3)+facet_wrap(~Continent)
+
+```
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+ggplot(WH2022,aes(Life_Ladder,Log_GDP_per_capita,color=Income_Group))+geom_point(size=3)+facet_wrap(~Income_Group)
+
+```
+
+## 4.2. Healthy_life_expectancy
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+ggplot(WH2022,aes(Life_Ladder,Healthy_life_expectancy_at_birth,color=Continent))+
+geom_point(size=3)+facet_wrap(~Continent)
+```
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+ggplot(WH2022,aes(Life_Ladder,Healthy_life_expectancy_at_birth,color=Income_Group))+
+geom_point(size=3)+facet_wrap(~Income_Group)
+
+```
+
+## 4.3. Generosity
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+WH2022%>%ggplot(aes(Life_Ladder,Generosity))+
+  geom_point(aes(color=Rank,size=Log_GDP_per_capita),alpha=1)+
+scale_colour_gradient(low="skyblue",high="darkblue")+xlim(0,10)
+```
+
+-   Không phải tất cả các quốc gia có chỉ số Life Ladder cao đều có sự sẵn sàng quyên góp tiền của người dân cao, cũng như không phải tất cả các quốc gia có chỉ số Life Ladder thấp đều có sự sẵn sàng quyên góp tiền của người dân thấp.
+-   Đa số các quốc gia đều có chỉ số Generosity nằm trong khoảng từ -0.2 đến 0.2. Đa số các quốc gia có Life Ladder cao thì sẽ có chỉ số Generosity dương.
+
+## 4.4. Social_support,Freedom and Perceptions_of_corruption
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+WH2022%>%ggplot(aes(Social_support,Freedom_to_make_life_choices))+
+  geom_point(aes(color=Perceptions_of_corruption,size=Life_Ladder),alpha=1)+
+scale_colour_gradient(low="#99FF33",high="darkgreen")
+```
+
+-   Các điểm có xu hướng hội tụ cho thấy rằng các quốc gia có sự tự do lựa chọn cuộc sống cao thì cũng sẽ có nhiều hỗ trợ xã hội. Màu sắc của các điểm cho thấy nhận thức tham nhũng của các quốc gia thường thấp ở các quốc gia có hỗ trợ xã hội cao.
+-   Tuy nhiên các quốc gia có hỗ trợ xã hội cao thì có Life Ladder cao cũng như các quốc gia mà người dân được tự do lựa chọn cuộc sống nhiều hơn thì sẽ hạnh phúc hơn. Nhận thức về tham nhũng có tác động không rõ ràng tới sự hạnh phúc của người dân.
+
+## 4.5. Positive affect and Negative affect
+
+```{r echo=FALSE, warning=FALSE, , message=FALSE}
+WH2022%>%ggplot(aes(Positive_affect,Negative_affect))+
+  geom_point(aes(color=Life_Ladder),alpha=1,size=5)+
+scale_colour_gradient(low="yellow",high="brown")
+```
+
+-   Mỗi liên hệ giữa cảm xúc tích cực và cảm xúc tiêu cực có xu hướng ngược chiều nhau, khi một quốc gia có Positive_affect cao thì thường có Negative_affect thấp và ngược lại, mối liên hệ này không quá chặt chẽ vì các điểm trên biểu đồ phân tán rộng.
+-   Tuy nhiên các quốc gia có tỉ lệ người dân có các cảm xúc tích cực cao thì thường sẽ có chỉ số hài lòng với cuộc sống cao trong khi nếu người dân có nhiều cảm xúc tiêu cực thì chỉ số hạnh phúc sẽ thấp.
+
+------------------------------------------------------------------------
+
+# Reference
+
+**1.** <https://worldhappiness.report>\
+**2.** <https://ourworldindata.org>\
+**3.** <https://r-graph-gallery.com/index.html>

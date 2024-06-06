@@ -1,0 +1,144 @@
+---
+title: "P3"
+author: "huhu"
+date: "2024-01-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(dslabs)
+library(dplyr)
+library(tidyverse)
+
+us_contagious_diseases
+p1<-us_contagious_diseases%>%filter(disease=="Measles")%>%
+  mutate(rate=count*1000/population)%>%
+  ggplot(aes(year,state,fill=rate))+geom_tile(color="grey")
+p1+scale_fill_gradientn(colors = c(rgb(1,1,1),rgb(1,0,0),
+                                   rgb(0.8,0,0)),trans = "sqrt")+
+  geom_vline(xintercept=1963, col = "green", size=2) +
+  scale_x_continuous(expand=c(0,0))+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        legend.position="bottom",
+        text = element_text(size = 12))+
+  xlab(label="")+
+  ylab(label="")
+```
+```{r}
+# 3 tphan bắt buộc :data,cấu phần(aes),goem()
+str(gapminder)
+attach(gapminder)
+datagap<-gapminder%>%mutate(gdp_per_capita=gdp/population)%>%filter(year=="2010")
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita))+geom_point()#đồ thị dải điểm
+ggplot(datagap,aes(x=infant_mortality,y=life_expectancy))+geom_point(,col="darkblue")
+
+```
+```{r}
+ggplot(mpg,aes(cty,hwy))+geom_point()
+ggplot(diamonds,aes(carat,price))+geom_point()
+ggplot(economics,aes(date,unemploy))+geom_line(,lwd=1.5)
+ggplot(datagap,aes(gdp_per_capita))+geom_histogram(,col="darkblue")
+```
+```{r}
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita,shape=continent))+geom_point()
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita,color=continent))+geom_point()
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita,size=continent))+geom_point()
+```
+```{r}
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita,color=continent))+
+  geom_point()+
+  geom_smooth(se=FALSE)
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita))+
+  geom_point(aes(color=continent))+
+  geom_smooth()
+```
+
+```{r}
+#mapping
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita))+
+  geom_point(aes(col="darkgreen"))+ggtitle("Mapping") # màu kh theo ý
+
+
+#setting
+ggplot(datagap,aes(x=fertilty,y=gdp_per_capita))+
+  geom_point(color="darkred")+ggtitle("Setting")
+#muốn
+```
+
+
+#Chia dữ liệu theo biến continent bằng facet_wrap
+```{r}
+ggplot(datagap,aes(x=fertility,y=gdp_per_capita))+geom_point()+facet_wrap(~continent,ncol = 5)
+```
+```{r}
+#View(mpg)#khả năng tiết kiệm nhiên liệu của xe oto
+str(mpg)
+```
+```{r}
+datampg<-mpg%>%mutate(vn_cty=(100*3.78)/(cty*1.618),vn_hwy=100*3.78/(hwy*1.618),.before = model)
+datampg
+```
+# 
+Xoá kí tự trong 1 chuỗi
+```{r}
+#datampg<-replace(mpg$model,list = c("quattro","4wd","2wd","awd"))
+datampg$model<-gsub("quattro","",datampg$model)
+datampg$model<-gsub("4wd","",datampg$model)
+datampg$model<-gsub("2wd","",datampg$model)
+datampg$model<-gsub("awd","",datampg$model)
+datampg
+```
+
+```{r}
+ggplot(datampg,aes(vn_cty,vn_hwy))+geom_point(,col="darkred",alpha=.5) 
+datampg%>%ggplot()+geom_point(aes(vn_cty,vn_hwy))
+ggplot(datampg,aes(vn_cty,vn_hwy))+geom_point(,col="darkred",alpha=.5)+geom_smooth(method = "lm",se=FALSE)
+```
+```{r}
+ggplot(datampg,aes(displ,vn_cty))+geom_point(aes(color=class))+geom_smooth(se=FALSE,col="red")+
+  geom_smooth(method = "lm",se=FALSE,col="blue")
+```
+```{r}
+ggplot(datagap,aes(continent,gdp_per_capita))+geom_boxplot(fill=con
+```
+
+ex enà
+o ó dung tích xilanh càng lớn thì lượng tiêu thụ nhiên liệu càng lớn
+
+manufacturer:manuf
+hcturer name
+
+model:model name
+
+displ:engine displacement, in litres (dung tích xilanh->càng to càng khoẻ)
+year:year of manufacture
+
+
+cyl:number of cylinders (động cơ có bao nhieu xilanh)
+
+trans:type of transmission (xe tự 
+
+drv:the type of drive train, where f = front-wheel drive, r = rear wheel drive, 4 = 4wd
+
+cty:city miles per gallon(tiêu thụ nhiên liệu khi đi trong tpho)
+
+hwy
+highway miles per gallon
+
+fl:fuel type
+
+class
+"type" of car
+
+
+dimonds<-ggplot()+geom_bar(aes(cut,fill=color))+scale_fill_brewer(palette="Set1")
+> gapminder%>%filter(country%in% c("China","Japan","United States"))%>%
++ ggplot()+geom_line(aes(year,gdp,col=country))
+diamonds<-ggplot()+geom_histogram(aes(price))
+> diamonds%>%ggplot()+geom_histogram(aes(price),bin=70)
